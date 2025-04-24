@@ -2,8 +2,26 @@ const Incident = require("../models/Incident");
 
 exports.getAllIncidents = async (req, res, next) => {
   try {
-    const incidents = await Incident.find().lean();
-    return res.status(200).json({ success: true, data: incidents });
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const totalIncidents = await Incident.countDocuments();
+
+    const incidents = await Incident.find().skip(skip).limit(limit).lean();
+
+    const totalPages = Math.ceil(totalIncidents / limit);
+
+    return res.status(200).json({
+      success: true,
+      data: incidents,
+      pagination: {
+        totalIncidents,
+        totalPages,
+        currentPage: page,
+        limit,
+      },
+    });
   } catch (error) {
     return res
       .status(500)
